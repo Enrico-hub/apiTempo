@@ -51,38 +51,38 @@ async function getWeatherForecast() {
   try {
     const { data } = await axios.get(url, { params });
 
-    const previsoes = EVENT_DATES.map((dataEvento) => {
-      const datas = data.daily.time;
-      let index = datas.indexOf(dataEvento);
+    const datas = data.daily.time;
+    const codigos = data.daily.weathercode;
+    const mins = data.daily.temperature_2m_min;
+    const maxs = data.daily.temperature_2m_max;
+    const chances = data.daily.precipitation_probability_max;
 
-      // se não achar data exata, usa o mais próximo
-      if (index === -1) index = 0;
+    const previsoes = [];
 
-      const weatherCode = data.daily.weathercode[index];
+    // pega no máximo 3 dias
+    const qtdDias = Math.min(3, datas.length);
+
+    for (let i = 0; i < qtdDias; i++) {
+      const weatherCode = codigos[i];
       const condicao =
         WEATHER_CODE_MAP[weatherCode] ||
         `Condição climática código ${weatherCode}`;
 
-      return {
-        dia: dataEvento,
+      previsoes.push({
+        dia: datas[i],              // data vinda da API
         condicao,
-        tempMin: data.daily.temperature_2m_min[index],
-        tempMax: data.daily.temperature_2m_max[index],
-        chanceChuva:
-          data.daily.precipitation_probability_max[index] ?? 0
-      };
-    });
+        tempMin: mins[i],
+        tempMax: maxs[i],
+        chanceChuva: chances[i] ?? 0
+      });
+    }
 
     return previsoes;
   } catch (error) {
     console.error('Erro ao chamar Open-Meteo:', error.message);
-    return EVENT_DATES.map((d) => ({
-      dia: d,
-      condicao: 'Não foi possível obter a previsão',
-      tempMin: null,
-      tempMax: null,
-      chanceChuva: null
-    }));
+    return [
+      { dia: 'indefinido', condicao: 'Não foi possível obter a previsão', tempMin: null, tempMax: null, chanceChuva: null }
+    ];
   }
 }
 
